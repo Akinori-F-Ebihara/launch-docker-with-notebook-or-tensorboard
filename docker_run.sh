@@ -7,9 +7,9 @@
 # Mar. 17, 2023 Akinori F. Ebihara
 
 # Set default values
-docker_container="afemod_lambda22_pytorch2:ebihara"
-port=42914
-home="/home/afe"
+docker_container="container_name:tag_name"
+port=46497
+home="/home/your_name"
 num_gpus=1
 isport=
 isjupyter=
