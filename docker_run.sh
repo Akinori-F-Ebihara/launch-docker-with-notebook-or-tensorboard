@@ -7,10 +7,11 @@
 # Mar. 17, 2023 Akinori F. Ebihara
 
 # Set default values
-docker_container="container_name:tag_name"
-port=46497
-home="/home/your_name"
-num_gpus=1
+docker_container="afemod_lambda22_pytorch2:ebihara"
+port=42914
+user="afe"
+home="/home/$user"
+docker_preferences="-it --rm --gpus all -v $home:$home -u $user"
 isport=
 isjupyter=
 tb_logdir=
@@ -29,21 +30,26 @@ function restart_nvidia_uvm() {
     echo "Rebooting nvidia_uvm..."
     sudo rmmod nvidia_uvm
     sudo modprobe nvidia_uvm
+    xset dpms force off
+    sleep 2
+    xset dpms force on
 }
 
 function wait_for_input(){
   # Get container ID
-  container_id=$(sudo docker ps -l -q)
+  container_id=$(docker ps -l -q)
 
   # Show Jupyter / Tensorboard logs running background
   sleep $wait_for # allow the container to print logs
-  sudo docker logs $container_id
+  docker logs $container_id
 
   while true; do
       echo "Select an option:"
-      echo "1. Restart nvidia_uvm"
-      echo "2. Print container logs"
-      echo "3. Quit with shutting down the container"
+      echo "1. Restart nvidia_uvm and toggle xset dpms"
+      echo "2. Run nvidia-smi"
+      echo "3. Check GPU availability"
+      echo "4. Print container logs"
+      echo "5. Quit with shutting down the container"
       echo -n "Enter a number: "
       read input
 
@@ -52,19 +58,25 @@ function wait_for_input(){
               restart_nvidia_uvm
               ;;
           2)
-              sudo docker logs $container_id
+              nvidia-smi
               ;;
           3)
+              docker exec $container_id python /home/afe/Dropbox/PYTHON/SPRTproject/PytorchMAUS_dev/gpu_test_pytorch.py
+              ;;
+          4)
+              docker logs $container_id
+              ;;
+          5)
               echo "Exiting..."
-              sudo docker exec $container_id pkill -f "jupyter-notebook"
-              sudo docker stop $container_id
+              # docker exec $container_id pkill -f "jupyter-notebook"
+              docker stop $container_id
               break
               ;;
           *)
               echo "Invalid input. Please try again."
               ;;
       esac
-  done  
+  done
 }
 
 function build_cmd(){
@@ -74,7 +86,7 @@ function build_cmd(){
     tb_logdir=$4
 
     # Build the docker run command based on the version and port
-    cmd="sudo docker run -it --rm --gpus $num_gpus -v $home:$home"
+    cmd="docker run $docker_preferences"
 
     # portforward if -p option is provided
     if [[ -n $isport ]]; then
@@ -89,7 +101,7 @@ function build_cmd(){
     if [[ -n $isjupyter ]]; then
     echo "Setting up Jupyter Notebook."
     cmd="$cmd -c 'bash -c \"jupyter notebook --no-browser --allow-root --ip=0.0.0.0 --port=$port &\" && bash'"
-    wait_for=0.25 #sec
+    wait_for=0.3 #sec
     fi
 
     # TensorBoard option
