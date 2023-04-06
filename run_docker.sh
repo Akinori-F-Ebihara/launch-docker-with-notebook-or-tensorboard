@@ -7,11 +7,11 @@
 # Mar. 17, 2023 Akinori F. Ebihara
 
 # Set default values
-docker_container="afemod_lambda22_pytorch2:ebihara"
+docker_image="pytorch:tag"
 port=42914
-user="afe"
+user="name"
 home="/home/$user"
-docker_preferences="-it --rm --gpus all -v $home:$home -u $user"
+docker_preferences="-it --gpus all --shm-size=1g -v $home:$home -u $user --rm"
 isport=
 isjupyter=
 tb_logdir=
@@ -23,6 +23,7 @@ function print_help() {
   echo "  -p port   Specify the port to use (to use default: $port, set -p '')."
   echo "  -j        Jupyter notebook option. Directly activate the notebook with the port."
   echo "  -t logdir TensorBoard option. Directly activate the TensorBoard with the port."
+  echo "  -i image  Specify a docker image to use."
   echo "  -h        Show this help message and exit."
 }
 
@@ -95,7 +96,7 @@ function build_cmd(){
     fi
 
     # specify a container
-    cmd="$cmd $docker_container /bin/bash"
+    cmd="$cmd $docker_image /bin/bash"
 
     # Jupyter notebook option
     if [[ -n $isjupyter ]]; then
@@ -116,7 +117,7 @@ function build_cmd(){
 ######################### main #########################
 
 # Parse command-line options and arguments
-while getopts ":v:p:jt:h" opt; do
+while getopts ":v:p:jt:i:h" opt; do
   case $opt in
     v) version=$OPTARG;;
     p) isport=1
@@ -130,6 +131,7 @@ while getopts ":v:p:jt:h" opt; do
         tb_logdir=$OPTARG
       fi
       ;;
+    i) docker_image=$OPTARG ;;
     h) print_help; exit 0;;
     \?) echo "Invalid option: -$OPTARG"; print_help; exit 1;;
     :) echo "Option -$OPTARG requires an argument"; print_help; exit 1;;
